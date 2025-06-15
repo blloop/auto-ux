@@ -1,9 +1,37 @@
 import { useState } from 'react';
 import OpenAI from "openai";
+import * as Babel from '@babel/standalone';
+import traverse from '@babel/traverse';
+
+const validateHTMLCode = (code: string): boolean => {
+  try {
+    const ast = Babel.transform(code, { ast: true, presets: ['react'] }).ast;
+    if (!ast) {
+      return false;
+    }
+
+    // Walk the AST and check for unsafe nodes
+    let isSafe = true;
+    traverse(ast, {
+      Identifier(path) {
+        const name = path.node.name;
+        if (['window', 'document', 'eval', 'Function'].includes(name)) {
+          isSafe = false;
+          path.stop();
+        }
+      },
+    });
+
+    return isSafe;
+  } catch (err) {
+    console.error('Babel parsing error:', err);
+    return false;
+  }
+};
 
 function App() {
   const [prompt, setPrompt] = useState("");
-  const [generatedCode, setGeneratedCode] = useState('');
+  const [code, setCode] = useState("");
 
   const generateCode = async () => {
     const openai = new OpenAI({
@@ -14,13 +42,15 @@ function App() {
     try {
       const response = await openai.responses.create({
         model: "gpt-4.1-nano-2025-04-14", // Or another suitable model
-        input: `Generate a React component for: ${prompt}`,
+        input: `${import.meta.env.VITE_PROMPT}${prompt}`,
         max_output_tokens: 500,
       });
-      console.log("output is", response.output_text)
+      console.log("prompt is", `${import.meta.env.VITE_PROMPT}${prompt}`)
+      console.log("output is", response.output_text);
+      setCode(response.output_text);
     } catch (error) {
       console.error("Error generating code:", error);
-      setGeneratedCode("Error generating code. See console for details.");
+      setCode("Error generating code. See console for details.");
     }
   };
 
@@ -39,15 +69,13 @@ function App() {
         />
         <button type="submit">Generate Code</button>
       </form>
-      <div>
-        <h2>Generated Code:</h2>
-        <pre>{generatedCode}</pre>
-        {/* WARNING: Using eval() to render generated code can be a security risk! */}
-        {/* Consider using a safer alternative like a sandboxed iframe. */}
-        {/* {eval(generatedCode)} */}
-      </div>
+      <h2>Generated Code:</h2>
+      {code.length > 0 && validateHTMLCode(code) ?
+        <div id="dynamic-content" dangerouslySetInnerHTML={{ __html: code }} /> :
+        code
+      }
     </div>
   );
 }
 
-export default App
+export default App;
