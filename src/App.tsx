@@ -58,25 +58,38 @@ export default function App() {
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
+    setPrompt("");
     generateCode();
   };
 
   return (
-    <div>
-      <button onClick={() => setShowPreview(!showPreview)}>{showPreview ? "Back to Prompt" : "Preview"}</button>
-      <form className={showPreview ? "hidden" : ""} onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-        />
-        <button type="submit">Generate Code</button>
-      </form>
-      <h2>Generated Code:</h2>
-      {showPreview && (code.length > 0 && validateHTMLCode(code) ?
-        <div id="dynamic-content" dangerouslySetInnerHTML={{ __html: code }} /> :
-        code
-      )}
-    </div>
+      <div className="flex flex-col items-center justify-center gap-2 w-full h-screen">
+        <button className={`absolute bottom-4 mx-auto hover:underline cursor-pointer ${code.length < 1 && "hidden"}`} onClick={() => setShowPreview(!showPreview)}>
+          {"<-"}
+          {showPreview ? "Back to prompt input" : "Show last preview"}
+        </button>
+        {showPreview ?
+          (code.length > 0 && validateHTMLCode(code) ?
+            <div id="dynamic-content" dangerouslySetInnerHTML={{ __html: code }} /> :
+            code
+          )
+        :
+          <>
+            <p className='text-4xl font-bold'>Create an HTML component</p>
+            <p className=''>...with only a few words</p>
+            <div className='h-4' />
+            <form className="flex gap-1" onSubmit={handleSubmit}>
+              <input
+                type="text"
+                value={prompt}
+                autoFocus
+                onChange={(e) => setPrompt(e.target.value)}
+                className='w-full h-8 text-xl px-1 rounded-md border border-slate-500'
+              />
+              <button className='px-2 bg-sky-500 text-white rounded-lg cursor-pointer transition-colors hover:bg-sky-700' type="submit">Go</button>
+            </form>
+          </>
+        }
+      </div>
   );
 }
