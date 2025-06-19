@@ -29,9 +29,10 @@ const validateHTMLCode = (code: string): boolean => {
   }
 };
 
-function App() {
+export default function App() {
   const [prompt, setPrompt] = useState("");
   const [code, setCode] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
 
   const generateCode = async () => {
     const openai = new OpenAI({
@@ -48,6 +49,7 @@ function App() {
       console.log("prompt is", `${import.meta.env.VITE_PROMPT}${prompt}`)
       console.log("output is", response.output_text);
       setCode(response.output_text);
+      setShowPreview(true);
     } catch (error) {
       console.error("Error generating code:", error);
       setCode("Error generating code. See console for details.");
@@ -61,7 +63,8 @@ function App() {
 
   return (
     <div>
-      <form onSubmit={handleSubmit}>
+      <button onClick={() => setShowPreview(!showPreview)}>{showPreview ? "Back to Prompt" : "Preview"}</button>
+      <form className={showPreview ? "hidden" : ""} onSubmit={handleSubmit}>
         <input
           type="text"
           value={prompt}
@@ -70,12 +73,10 @@ function App() {
         <button type="submit">Generate Code</button>
       </form>
       <h2>Generated Code:</h2>
-      {code.length > 0 && validateHTMLCode(code) ?
+      {showPreview && (code.length > 0 && validateHTMLCode(code) ?
         <div id="dynamic-content" dangerouslySetInnerHTML={{ __html: code }} /> :
         code
-      }
+      )}
     </div>
   );
 }
-
-export default App;
